@@ -21,10 +21,9 @@ let cameraX=0;
 let gameWon=false;
 let message="";
 let messageTimer=0;
-
 let usedPhrases=[];
 
-// GENERADOR DE 150 FRASES ÚNICAS
+// -------- FRASES (150 únicas generadas) --------
 const subjects=["Tu sonrisa","Tu mirada","Tu voz","Tu risa","Tu ternura","Tu forma de amar","Tu energía","Tu presencia","Tu dulzura","Tu corazón"];
 const feelings=["ilumina mi mundo","me da paz","me hace fuerte","me llena de amor","me inspira cada día","me hace soñar","es mi refugio","es mi alegría eterna","me cambia la vida","es mi destino"];
 const endings=["cada segundo 💖","para siempre 💕","sin límites ✨","como un milagro 🌙","más de lo que imaginas 💫","hasta el infinito 💘","con todo mi corazón ❤️","en cada latido 💓","en cada pensamiento 💭","sin condición 💞"];
@@ -51,6 +50,7 @@ usedPhrases.push(random);
 return random;
 }
 
+// -------- JUGADOR --------
 let player={
 x:100,y:300,width:40,height:40,
 dy:0,gravity:1.2,jump:-20,grounded:false,
@@ -65,10 +65,13 @@ function resetPlayer(){
 player.x=100;
 player.y=300;
 player.dy=0;
+
+// FRASE FIJA AL MORIR
 message="Tú puedes corazón, inténtalo de nuevo 💕";
-messageTimer=150;
+messageTimer=160;
 }
 
+// -------- OBJETOS --------
 let platforms=[];
 let spikes=[];
 let mice=[];
@@ -76,19 +79,18 @@ let hearts=[];
 let candles=[];
 let xPos=0;
 
-// +40 BASES EXTRA (ahora 75 en total)
+// 75 bases
 for(let i=0;i<75;i++){
 
 let y=450+Math.sin(i)*120;
-
 platforms.push({x:xPos,y:y,w:120,h:20,id:i});
 
-// frase cada vez que toque base
-if(i!==0 && i%2===0){
+// MENOS PINCHOS (ahora cada 4 plataformas)
+if(i%4===0 && i!==0){
 spikes.push({x:xPos+30,y:y-20,w:60,h:20});
 }
 
-if(i%5===0 && i!==0){
+if(i%6===0 && i!==0){
 mice.push({x:xPos+40,y:y-20,w:30,h:20,dir:1,min:xPos+20,max:xPos+80});
 }
 
@@ -96,7 +98,6 @@ if(i%4===0){
 hearts.push({x:xPos+50,y:y-40,size:14,got:false});
 }
 
-// velas románticas
 if(i%3===0){
 candles.push({x:xPos+10,y:y-25});
 candles.push({x:xPos+95,y:y-25});
@@ -107,7 +108,7 @@ xPos+=200;
 
 let portal={x:xPos-200,y:350,size:40,phase:0};
 
-// estrellas
+// -------- ESTRELLAS --------
 let stars=[];
 for(let i=0;i<150;i++){
 stars.push({
@@ -118,6 +119,7 @@ phase:Math.random()*6.28
 });
 }
 
+// -------- UPDATE --------
 function update(){
 
 if(gameWon) return;
@@ -210,6 +212,7 @@ cameraX=player.x-200;
 if(messageTimer>0) messageTimer--;
 }
 
+// -------- DIBUJO --------
 function drawHeart(x,y,size,color){
 ctx.beginPath();
 ctx.moveTo(x,y);
