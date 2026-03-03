@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Corre Hacia Nosotros - Nivel 1</title>
+<style>
+body{
+    margin:0;
+    overflow:hidden;
+    background:#0a0f2c;
+}
+canvas{
+    display:block;
+}
+#message{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    color:white;
+    font-family:Arial;
+    text-align:center;
+    display:none;
+}
+</style>
+</head>
+<body>
+
+<canvas id="game"></canvas>
+
+<div id="message">
+    <h1>✨ Bajo las estrellas ✨</h1>
+    <p>Superaste el primer camino…</p>
+    <p>Y este es solo el inicio de nosotros.</p>
+    <h2>❤️</h2>
+</div>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let cameraX = 0;
+
+let player = {
+    x:100,
+    y:300,
+    width:40,
+    height:40,
+    dy:0,
+    gravity:0.8,
+    jump:-15,
+    grounded:false
+};
+
+let keys = {};
+document.addEventListener("keydown",e=>keys[e.key]=true);
+document.addEventListener("keyup",e=>keys[e.key]=false);
+
+let platforms = [
+    {x:0,y:500,width:400,height:20},
+    {x:500,y:450,width:200,height:20},
+    {x:800,y:400,width:200,height:20},
+    {x:1100,y:350,width:200,height:20},
+    {x:1500,y:500,width:600,height:20} // zona final
+];
+
+let stars = [];
+for(let i=0;i<120;i++){
+    stars.push({
+        x:Math.random()*3000,
+        y:Math.random()*300,
+        size:Math.random()*2
+    });
+}
+
+function update(){
+    player.dy += player.gravity;
+    player.y += player.dy;
+
+    if(keys["ArrowRight"]) player.x += 5;
+    if(keys["ArrowLeft"]) player.x -= 5;
+
+    player.grounded = false;
+
+    platforms.forEach(p=>{
+        if(player.x < p.x + p.width &&
+           player.x + player.width > p.x &&
+           player.y < p.y + p.height &&
+           player.y + player.height > p.y){
+            player.y = p.y - player.height;
+            player.dy = 0;
+            player.grounded = true;
+        }
+    });
+
+    if(keys[" "] && player.grounded){
+        player.dy = player.jump;
+    }
+
+    cameraX = player.x - 200;
+
+    if(player.x > 1600){
+        document.getElementById("message").style.display="block";
+    }
+}
+
+function drawStars(){
+    ctx.fillStyle="white";
+    stars.forEach(star=>{
+        ctx.fillRect(star.x - cameraX*0.3, star.y, star.size, star.size);
+    });
+}
+
+function drawCandles(){
+    for(let i=1550;i<2000;i+=60){
+        ctx.fillStyle="#fff3b0";
+        ctx.fillRect(i - cameraX,480,10,20);
+
+        ctx.beginPath();
+        ctx.arc(i - cameraX +5,475,5,0,Math.PI*2);
+        ctx.fillStyle="orange";
+        ctx.fill();
+    }
+}
+
+function drawPetals(){
+    for(let i=1500;i<2100;i+=15){
+        ctx.fillStyle="red";
+        ctx.beginPath();
+        ctx.arc(i - cameraX + Math.random()*5,495 + Math.random()*5,4,0,Math.PI*2);
+        ctx.fill();
+    }
+}
+
+function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    drawStars();
+
+    // jugador
+    ctx.fillStyle="white";
+    ctx.fillRect(player.x - cameraX, player.y, player.width, player.height);
+
+    // plataformas
+    ctx.fillStyle="#e74c3c";
+    platforms.forEach(p=>{
+        ctx.fillRect(p.x - cameraX, p.y, p.width, p.height);
+    });
+
+    drawPetals();
+    drawCandles();
+}
+
+function loop(){
+    update();
+    draw();
+    requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+
+</body>
+</html>
