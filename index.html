@@ -6,81 +6,82 @@
 <style>
 body{margin:0;overflow:hidden;background:#0a0f2c;}
 canvas{display:block;}
-#ui{
-position:absolute;top:20px;left:50%;transform:translateX(-50%);
-color:white;font-family:Arial;text-align:center;
-}
 </style>
 </head>
 <body>
-
 <canvas id="game"></canvas>
-<div id="ui"></div>
-
 <script>
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
 
 let cameraX=0;
 let message="";
 let messageTimer=0;
 let score=0;
+let gameWon=false;
+let fireworks=[];
 
 let player={
 x:100,y:300,width:40,height:40,
-dy:0,gravity:0.8,jump:-15,grounded:false
+dy:0,gravity:0.9,jump:-17,grounded:false
 };
 
 let keys={};
 document.addEventListener("keydown",e=>keys[e.key]=true);
 document.addEventListener("keyup",e=>keys[e.key]=false);
 
-let platforms=[
-{x:0,y:500,w:300,h:20},
-{x:350,y:450,w:150,h:20},
-{x:550,y:400,w:150,h:20},
-{x:750,y:350,w:150,h:20},
-{x:950,y:300,w:150,h:20},
-{x:1200,y:450,w:200,h:20},
-{x:1500,y:400,w:200,h:20},
-{x:1800,y:350,w:200,h:20},
-{x:2100,y:500,w:400,h:20}
-];
-
-let hearts=[
-{x:380,y:400,got:false},
-{x:780,y:300,got:false},
-{x:1250,y:350,got:false},
-{x:1700,y:300,got:false},
-{x:2200,y:450,got:false}
-];
-
-let checkpoints=[
-{x:500,text:"Eres mi lugar favorito 💖",used:false},
-{x:900,text:"Contigo todo tiene sentido ✨",used:false},
-{x:1300,text:"Tu sonrisa es mi meta 🥰",used:false},
-{x:1800,text:"Eres mi calma y mi aventura 🌙",used:false},
-{x:2300,text:"Siempre elegiría correr hacia ti ❤️",used:false}
-];
-
-function resetPlayer(){
+function resetPlayer(text="Tú puedes corazón 💕 Inténtalo otra vez"){
 player.x=100;
 player.y=300;
 player.dy=0;
 cameraX=0;
-message="Tú puedes corazón, inténtalo de nuevo 💕";
+message=text;
 messageTimer=120;
 }
 
+let platforms=[
+{x:0,y:550,w:200,h:20},
+{x:350,y:480,w:150,h:20},
+{x:650,y:420,w:120,h:20},
+{x:900,y:360,w:120,h:20},
+{x:1150,y:300,w:120,h:20},
+{x:1400,y:450,w:150,h:20},
+{x:1750,y:380,w:150,h:20},
+{x:2100,y:320,w:150,h:20},
+{x:2500,y:550,w:400,h:20}
+];
+
+let spikes=[
+{x:500,y:530,w:40,h:20},
+{x:1000,y:530,w:40,h:20},
+{x:1600,y:530,w:40,h:20}
+];
+
+let mice=[
+{x:800,y:390,dir:1},
+{x:1850,y:350,dir:-1}
+];
+
+let hearts=[
+{x:700,y:350,got:false},
+{x:1300,y:250,got:false},
+{x:2000,y:280,got:false}
+];
+
+let portal={x:2650,y:470,r:40};
+
 function update(){
+
+if(gameWon) return;
 
 player.dy+=player.gravity;
 player.y+=player.dy;
 
-if(keys["ArrowRight"]) player.x+=5;
-if(keys["ArrowLeft"]) player.x-=5;
+if(keys["ArrowRight"]) player.x+=6;
+if(keys["ArrowLeft"]) player.x-=6;
 
 player.grounded=false;
 
@@ -99,11 +100,29 @@ if((keys[" "]||keys["ArrowUp"]) && player.grounded){
 player.dy=player.jump;
 }
 
-if(player.y>canvas.height){
-resetPlayer();
-}
+if(player.y>canvas.height) resetPlayer();
 
-cameraX=player.x-200;
+// pinchos
+spikes.forEach(s=>{
+if(player.x < s.x+s.w &&
+   player.x+player.width > s.x &&
+   player.y+player.height > s.y){
+resetPlayer("El amor requiere valentía 💔 pero tú puedes");
+}
+});
+
+// ratones
+mice.forEach(m=>{
+m.x+=2*m.dir;
+if(m.x<700||m.x>900) m.dir*=-1;
+
+if(player.x < m.x+30 &&
+   player.x+player.width > m.x &&
+   player.y < m.y+20 &&
+   player.y+player.height > m.y){
+resetPlayer("Los obstáculos no pueden contra nosotros 🐭");
+}
+});
 
 // corazones
 hearts.forEach(h=>{
@@ -114,20 +133,20 @@ player.y < h.y+20 &&
 player.y+player.height > h.y){
 h.got=true;
 score++;
-message="Te quiero mucho ❤️";
+message="Te quiero muchísimo ❤️";
 messageTimer=60;
 }
 });
 
-// checkpoints
-checkpoints.forEach(c=>{
-if(!c.used && player.x>c.x){
-c.used=true;
-message=c.text;
-messageTimer=150;
+// portal final
+let dx=player.x-portal.x;
+let dy=player.y-portal.y;
+if(Math.sqrt(dx*dx+dy*dy)<portal.r){
+gameWon=true;
+startFireworks();
 }
-});
 
+cameraX=player.x-200;
 if(messageTimer>0) messageTimer--;
 }
 
@@ -136,59 +155,88 @@ ctx.fillStyle="white";
 ctx.beginPath();
 ctx.arc(x+20,y+20,20,0,Math.PI*2);
 ctx.fill();
-
-// orejas
-ctx.beginPath();
-ctx.moveTo(x+5,y+10);
-ctx.lineTo(x+15,y-10);
-ctx.lineTo(x+25,y+10);
-ctx.fill();
-
-ctx.beginPath();
-ctx.moveTo(x+35,y+10);
-ctx.lineTo(x+45,y-10);
-ctx.lineTo(x+55,y+10);
-ctx.fill();
-}
-
-function drawStars(){
-ctx.fillStyle="white";
-for(let i=0;i<150;i++){
-ctx.fillRect((i*200)%3000-cameraX*0.3,Math.random()*300,2,2);
-}
 }
 
 function draw(){
 ctx.clearRect(0,0,canvas.width,canvas.height);
 
-drawStars();
+// estrellas
+ctx.fillStyle="white";
+for(let i=0;i<200;i++){
+ctx.fillRect((i*300)%4000-cameraX*0.3,Math.random()*300,2,2);
+}
 
-platforms.forEach(p=>{
+// plataformas
 ctx.fillStyle="#e74c3c";
-ctx.fillRect(p.x-cameraX,p.y,p.w,p.h);
+platforms.forEach(p=>ctx.fillRect(p.x-cameraX,p.y,p.w,p.h));
+
+// pinchos
+ctx.fillStyle="silver";
+spikes.forEach(s=>{
+ctx.beginPath();
+ctx.moveTo(s.x-cameraX,s.y);
+ctx.lineTo(s.x+20-cameraX,s.y-20);
+ctx.lineTo(s.x+40-cameraX,s.y);
+ctx.fill();
 });
 
+// ratones
+ctx.fillStyle="gray";
+mice.forEach(m=>ctx.fillRect(m.x-cameraX,m.y,30,20));
+
 // corazones
+ctx.fillStyle="pink";
 hearts.forEach(h=>{
 if(!h.got){
-ctx.fillStyle="pink";
 ctx.beginPath();
 ctx.arc(h.x-cameraX,h.y,8,0,Math.PI*2);
 ctx.fill();
 }
 });
 
+// portal corazón
+ctx.fillStyle="pink";
+ctx.beginPath();
+ctx.arc(portal.x-cameraX,portal.y,portal.r,0,Math.PI*2);
+ctx.fill();
+
 drawCat(player.x-cameraX,player.y);
 
-// UI
 ctx.fillStyle="white";
 ctx.font="20px Arial";
 ctx.fillText("❤️ x "+score,20,40);
 
 if(messageTimer>0){
-ctx.font="28px Arial";
-ctx.fillText(message,canvas.width/2-200,100);
+ctx.font="24px Arial";
+ctx.fillText(message,canvas.width/2-250,100);
 }
+
+if(gameWon){
+ctx.fillStyle="white";
+ctx.font="40px Arial";
+ctx.fillText("Eres lo más hermoso que la vida me regaló,",canvas.width/2-400,canvas.height/2);
+ctx.fillText("mi casualidad favorita, mi destino perfecto ❤️",canvas.width/2-400,canvas.height/2+50);
+drawFireworks();
+}
+}
+
+function startFireworks(){
+for(let i=0;i<50;i++){
+fireworks.push({
+x:Math.random()*canvas.width,
+y:Math.random()*canvas.height/2,
+r:Math.random()*3+2
+});
+}
+}
+
+function drawFireworks(){
+ctx.fillStyle="gold";
+fireworks.forEach(f=>{
+ctx.beginPath();
+ctx.arc(f.x,f.y,f.r,0,Math.PI*2);
+ctx.fill();
+});
 }
 
 function loop(){
@@ -196,8 +244,8 @@ update();
 draw();
 requestAnimationFrame(loop);
 }
-
 loop();
+
 </script>
 </body>
 </html>
