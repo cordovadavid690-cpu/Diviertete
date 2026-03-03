@@ -21,41 +21,40 @@ let cameraX=0;
 let gameWon=false;
 let message="";
 let messageTimer=0;
-let usedMessages=[];
 
-let phrases=[
-"Eres mi sueño más bonito ❤️",
-"Mi lugar favorito es contigo 💕",
-"Eres mi casualidad perfecta ✨",
-"Tu sonrisa ilumina mi mundo 🌙",
-"Contigo todo tiene sentido 💖",
-"Te elegiría siempre 🥰",
-"Eres mi paz en el caos 🌌",
-"Mi corazón corre hacia ti 💘",
-"Amarte es mi aventura favorita 💞",
-"Eres lo mejor que me pasó ❤️",
-"Mi futuro tiene tu nombre 💍",
-"Tu voz es mi melodía favorita 🎶",
-"Mi hogar está donde estés tú 🏡",
-"Te pienso más de lo que imaginas 💭",
-"Tu abrazo sería mi lugar seguro 🤍",
-"Eres mi milagro diario ✨",
-"Si volviera a nacer, te elegiría otra vez 💘",
-"Amarte es mi destino 🌠",
-"Eres mi siempre favorito 💓"
-];
+let usedPhrases=[];
+
+// GENERADOR DE 150 FRASES ÚNICAS
+const subjects=["Tu sonrisa","Tu mirada","Tu voz","Tu risa","Tu ternura","Tu forma de amar","Tu energía","Tu presencia","Tu dulzura","Tu corazón"];
+const feelings=["ilumina mi mundo","me da paz","me hace fuerte","me llena de amor","me inspira cada día","me hace soñar","es mi refugio","es mi alegría eterna","me cambia la vida","es mi destino"];
+const endings=["cada segundo 💖","para siempre 💕","sin límites ✨","como un milagro 🌙","más de lo que imaginas 💫","hasta el infinito 💘","con todo mi corazón ❤️","en cada latido 💓","en cada pensamiento 💭","sin condición 💞"];
+
+function generatePhrases(){
+let list=[];
+subjects.forEach(s=>{
+feelings.forEach(f=>{
+endings.forEach(e=>{
+list.push(`${s} ${f} ${e}`);
+});
+});
+});
+return list.slice(0,150);
+}
+
+let phrases=generatePhrases();
 
 function getRandomPhrase(){
-if(usedMessages.length===phrases.length) usedMessages=[];
-let available=phrases.filter(p=>!usedMessages.includes(p));
+if(usedPhrases.length===phrases.length) usedPhrases=[];
+let available=phrases.filter(p=>!usedPhrases.includes(p));
 let random=available[Math.floor(Math.random()*available.length)];
-usedMessages.push(random);
+usedPhrases.push(random);
 return random;
 }
 
 let player={
 x:100,y:300,width:40,height:40,
-dy:0,gravity:1.2,jump:-20,grounded:false
+dy:0,gravity:1.2,jump:-20,grounded:false,
+lastPlatform:-1
 };
 
 let keys={};
@@ -74,36 +73,41 @@ let platforms=[];
 let spikes=[];
 let mice=[];
 let hearts=[];
+let candles=[];
 let xPos=0;
 
-// NIVEL MÁS DIFÍCIL
-for(let i=0;i<35;i++){
+// +40 BASES EXTRA (ahora 75 en total)
+for(let i=0;i<75;i++){
 
 let y=450+Math.sin(i)*120;
 
-platforms.push({x:xPos,y:y,w:120,h:20});
+platforms.push({x:xPos,y:y,w:120,h:20,id:i});
 
-// pinchos
-if(i%2===0 && i!==0){
+// frase cada vez que toque base
+if(i!==0 && i%2===0){
 spikes.push({x:xPos+30,y:y-20,w:60,h:20});
 }
 
-// ratones enemigos
 if(i%5===0 && i!==0){
 mice.push({x:xPos+40,y:y-20,w:30,h:20,dir:1,min:xPos+20,max:xPos+80});
 }
 
-// corazones físicos
-if(i%3===0){
+if(i%4===0){
 hearts.push({x:xPos+50,y:y-40,size:14,got:false});
+}
+
+// velas románticas
+if(i%3===0){
+candles.push({x:xPos+10,y:y-25});
+candles.push({x:xPos+95,y:y-25});
 }
 
 xPos+=200;
 }
 
-let portal={x:xPos-150,y:350,size:40,phase:0};
+let portal={x:xPos-200,y:350,size:40,phase:0};
 
-// estrellas animadas
+// estrellas
 let stars=[];
 for(let i=0;i<150;i++){
 stars.push({
@@ -131,6 +135,13 @@ if(player.x < p.x+p.w &&
    player.x+player.width > p.x &&
    player.y+player.height <= p.y+20 &&
    player.y+player.height+player.dy >= p.y){
+
+if(player.lastPlatform!==p.id){
+message=getRandomPhrase();
+messageTimer=120;
+player.lastPlatform=p.id;
+}
+
 player.y=p.y-player.height;
 player.dy=0;
 player.grounded=true;
@@ -174,7 +185,7 @@ player.x < h.x+h.size &&
 player.y+player.height > h.y &&
 player.y < h.y+h.size){
 h.got=true;
-message=getRandomPhrase();
+message="Te quiero mucho mi suki 💕";
 messageTimer=150;
 }
 });
@@ -227,6 +238,17 @@ ctx.fillRect(st.x,st.y,3,3);
 ctx.fillStyle="#e74c3c";
 platforms.forEach(p=>ctx.fillRect(p.x-cameraX,p.y,p.w,p.h));
 
+// velas
+candles.forEach(c=>{
+ctx.fillStyle="#fff";
+ctx.fillRect(c.x-cameraX,c.y,6,20);
+let flame=8+Math.sin(Date.now()/200)*2;
+ctx.fillStyle="orange";
+ctx.beginPath();
+ctx.arc(c.x-cameraX+3,c.y-5,flame/2,0,Math.PI*2);
+ctx.fill();
+});
+
 // pinchos
 ctx.fillStyle="silver";
 spikes.forEach(s=>{
@@ -250,7 +272,7 @@ drawHeart(h.x-cameraX,h.y,h.size,"red");
 }
 });
 
-// portal corazón
+// portal
 let r=200+55*Math.sin(portal.phase);
 let g=50+50*Math.sin(portal.phase+2);
 let b=200+55*Math.sin(portal.phase+4);
@@ -262,17 +284,17 @@ ctx.beginPath();
 ctx.arc(player.x-cameraX+20,player.y+20,20,0,Math.PI*2);
 ctx.fill();
 
-// mensajes
+// mensaje
 if(messageTimer>0){
 ctx.fillStyle="white";
-ctx.font="24px Arial";
+ctx.font="22px Arial";
 ctx.fillText(message,canvas.width/2-450,100);
 }
 
 if(gameWon){
-ctx.font="38px Arial";
-ctx.fillText("Nivel superado 💖",
-canvas.width/2-200,canvas.height/2);
+ctx.font="36px Arial";
+ctx.fillText("Eres mi destino favorito 💖",
+canvas.width/2-250,canvas.height/2);
 }
 }
 
