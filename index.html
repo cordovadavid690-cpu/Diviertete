@@ -18,60 +18,73 @@ canvas.width=window.innerWidth;
 canvas.height=window.innerHeight;
 
 let cameraX=0;
-let message="";
-let messageTimer=0;
 let score=0;
 let gameWon=false;
-let fireworks=[];
+let message="";
+let messageTimer=0;
+
+let lovePhrases=[
+"Eres mi pensamiento favorito cada día 💕",
+"Si el mundo se apagara, tú serías mi luz ✨",
+"Contigo todo tiene sentido ❤️",
+"Eres mi lugar seguro 🌙",
+"Te elegiría en todas mis vidas 💖",
+"Tu sonrisa es mi paz 🥰",
+"Mi casualidad favorita fue encontrarte 💫",
+"Si correr hacia ti es difícil, lo haría mil veces",
+"Eres el sueño que no sabía que tenía",
+"Amarte es lo más real que me ha pasado ❤️"
+];
+
+function randomPhrase(){
+message=lovePhrases[Math.floor(Math.random()*lovePhrases.length)];
+messageTimer=120;
+}
 
 let player={
 x:100,y:300,width:40,height:40,
-dy:0,gravity:0.9,jump:-17,grounded:false
+dy:0,gravity:1,jump:-18,grounded:false
 };
 
 let keys={};
 document.addEventListener("keydown",e=>keys[e.key]=true);
 document.addEventListener("keyup",e=>keys[e.key]=false);
 
-function resetPlayer(text="Tú puedes corazón 💕 Inténtalo otra vez"){
+function resetPlayer(){
 player.x=100;
 player.y=300;
 player.dy=0;
-cameraX=0;
-message=text;
-messageTimer=120;
+randomPhrase();
 }
 
-let platforms=[
-{x:0,y:550,w:200,h:20},
-{x:350,y:480,w:150,h:20},
-{x:650,y:420,w:120,h:20},
-{x:900,y:360,w:120,h:20},
-{x:1150,y:300,w:120,h:20},
-{x:1400,y:450,w:150,h:20},
-{x:1750,y:380,w:150,h:20},
-{x:2100,y:320,w:150,h:20},
-{x:2500,y:550,w:400,h:20}
-];
+let platforms=[];
+let xPos=0;
+for(let i=0;i<25;i++){
+platforms.push({
+x:xPos,
+y:400+Math.sin(i)*100,
+w:120,
+h:20
+});
+xPos+=200+Math.random()*100;
+}
 
 let spikes=[
-{x:500,y:530,w:40,h:20},
-{x:1000,y:530,w:40,h:20},
-{x:1600,y:530,w:40,h:20}
+{x:600,y:550},{x:1200,y:550},{x:2000,y:550},{x:2800,y:550}
 ];
 
 let mice=[
-{x:800,y:390,dir:1},
-{x:1850,y:350,dir:-1}
+{x:900,y:350,dir:1},
+{x:1700,y:350,dir:-1},
+{x:2500,y:350,dir:1}
 ];
 
-let hearts=[
-{x:700,y:350,got:false},
-{x:1300,y:250,got:false},
-{x:2000,y:280,got:false}
-];
+let hearts=[];
+for(let i=1;i<=10;i++){
+hearts.push({x:500*i,y:250+Math.random()*100,got:false});
+}
 
-let portal={x:2650,y:470,r:40};
+let portal={x:xPos+200,y:300,size:40};
 
 function update(){
 
@@ -104,23 +117,21 @@ if(player.y>canvas.height) resetPlayer();
 
 // pinchos
 spikes.forEach(s=>{
-if(player.x < s.x+s.w &&
-   player.x+player.width > s.x &&
-   player.y+player.height > s.y){
-resetPlayer("El amor requiere valentía 💔 pero tú puedes");
+if(player.x > s.x-20 && player.x < s.x+20 && player.y+player.height>530){
+resetPlayer();
 }
 });
 
 // ratones
 mice.forEach(m=>{
 m.x+=2*m.dir;
-if(m.x<700||m.x>900) m.dir*=-1;
+if(m.x<700||m.x>m.x+200) m.dir*=-1;
 
 if(player.x < m.x+30 &&
    player.x+player.width > m.x &&
    player.y < m.y+20 &&
    player.y+player.height > m.y){
-resetPlayer("Los obstáculos no pueden contra nosotros 🐭");
+resetPlayer();
 }
 });
 
@@ -133,37 +144,54 @@ player.y < h.y+20 &&
 player.y+player.height > h.y){
 h.got=true;
 score++;
-message="Te quiero muchísimo ❤️";
-messageTimer=60;
+message="Te amo más de lo que las palabras pueden explicar ❤️";
+messageTimer=80;
 }
 });
 
-// portal final
-let dx=player.x-portal.x;
-let dy=player.y-portal.y;
-if(Math.sqrt(dx*dx+dy*dy)<portal.r){
+// portal corazón
+if(Math.abs(player.x-portal.x)<40 && Math.abs(player.y-portal.y)<40){
 gameWon=true;
-startFireworks();
 }
 
 cameraX=player.x-200;
 if(messageTimer>0) messageTimer--;
 }
 
-function drawCat(x,y){
-ctx.fillStyle="white";
+function drawStar(cx,cy,spikes,outerRadius,innerRadius){
+let rot=Math.PI/2*3;
+let step=Math.PI/spikes;
 ctx.beginPath();
-ctx.arc(x+20,y+20,20,0,Math.PI*2);
+ctx.moveTo(cx,cy-outerRadius);
+for(let i=0;i<spikes;i++){
+ctx.lineTo(cx+Math.cos(rot)*outerRadius,cy+Math.sin(rot)*outerRadius);
+rot+=step;
+ctx.lineTo(cx+Math.cos(rot)*innerRadius,cy+Math.sin(rot)*innerRadius);
+rot+=step;
+}
+ctx.lineTo(cx,cy-outerRadius);
+ctx.closePath();
+ctx.fillStyle="white";
+ctx.fill();
+}
+
+function drawHeart(x,y,size){
+ctx.beginPath();
+ctx.moveTo(x,y);
+ctx.bezierCurveTo(x,y-size/2,x-size,y-size/2,x-size,y);
+ctx.bezierCurveTo(x-size,y+size/2,x,y+size,x,y+size*1.5);
+ctx.bezierCurveTo(x,y+size,x+size,y+size/2,x+size,y);
+ctx.bezierCurveTo(x+size,y-size/2,x,y-size/2,x,y);
+ctx.fillStyle="pink";
 ctx.fill();
 }
 
 function draw(){
 ctx.clearRect(0,0,canvas.width,canvas.height);
 
-// estrellas
-ctx.fillStyle="white";
-for(let i=0;i<200;i++){
-ctx.fillRect((i*300)%4000-cameraX*0.3,Math.random()*300,2,2);
+// estrellas bonitas
+for(let i=0;i<30;i++){
+drawStar((i*300)%4000-cameraX*0.2,100+Math.sin(i)*50,5,8,4);
 }
 
 // plataformas
@@ -174,9 +202,9 @@ platforms.forEach(p=>ctx.fillRect(p.x-cameraX,p.y,p.w,p.h));
 ctx.fillStyle="silver";
 spikes.forEach(s=>{
 ctx.beginPath();
-ctx.moveTo(s.x-cameraX,s.y);
-ctx.lineTo(s.x+20-cameraX,s.y-20);
-ctx.lineTo(s.x+40-cameraX,s.y);
+ctx.moveTo(s.x-cameraX,550);
+ctx.lineTo(s.x+20-cameraX,520);
+ctx.lineTo(s.x+40-cameraX,550);
 ctx.fill();
 });
 
@@ -185,58 +213,36 @@ ctx.fillStyle="gray";
 mice.forEach(m=>ctx.fillRect(m.x-cameraX,m.y,30,20));
 
 // corazones
-ctx.fillStyle="pink";
 hearts.forEach(h=>{
 if(!h.got){
-ctx.beginPath();
-ctx.arc(h.x-cameraX,h.y,8,0,Math.PI*2);
-ctx.fill();
+drawHeart(h.x-cameraX,h.y,10);
 }
 });
 
-// portal corazón
-ctx.fillStyle="pink";
+// portal final corazón
+drawHeart(portal.x-cameraX,portal.y,40);
+
+// gato
+ctx.fillStyle="white";
 ctx.beginPath();
-ctx.arc(portal.x-cameraX,portal.y,portal.r,0,Math.PI*2);
+ctx.arc(player.x-cameraX+20,player.y+20,20,0,Math.PI*2);
 ctx.fill();
 
-drawCat(player.x-cameraX,player.y);
-
+// UI
 ctx.fillStyle="white";
 ctx.font="20px Arial";
 ctx.fillText("❤️ x "+score,20,40);
 
 if(messageTimer>0){
-ctx.font="24px Arial";
-ctx.fillText(message,canvas.width/2-250,100);
+ctx.font="26px Arial";
+ctx.fillText(message,canvas.width/2-400,100);
 }
 
 if(gameWon){
-ctx.fillStyle="white";
-ctx.font="40px Arial";
-ctx.fillText("Eres lo más hermoso que la vida me regaló,",canvas.width/2-400,canvas.height/2);
-ctx.fillText("mi casualidad favorita, mi destino perfecto ❤️",canvas.width/2-400,canvas.height/2+50);
-drawFireworks();
+ctx.font="38px Arial";
+ctx.fillText("Eres el amor más bonito que llegó a mi vida,",canvas.width/2-450,canvas.height/2);
+ctx.fillText("mi razón favorita para sonreír cada día ❤️",canvas.width/2-450,canvas.height/2+50);
 }
-}
-
-function startFireworks(){
-for(let i=0;i<50;i++){
-fireworks.push({
-x:Math.random()*canvas.width,
-y:Math.random()*canvas.height/2,
-r:Math.random()*3+2
-});
-}
-}
-
-function drawFireworks(){
-ctx.fillStyle="gold";
-fireworks.forEach(f=>{
-ctx.beginPath();
-ctx.arc(f.x,f.y,f.r,0,Math.PI*2);
-ctx.fill();
-});
 }
 
 function loop(){
