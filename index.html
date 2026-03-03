@@ -35,19 +35,18 @@ let phrases=[
 "Amarte es mi aventura favorita 💞",
 "Eres lo mejor que me pasó ❤️",
 "Mi futuro tiene tu nombre 💍",
-"Eres mi destino favorito 🌠",
 "Tu voz es mi melodía favorita 🎶",
 "Mi hogar está donde estés tú 🏡",
 "Te pienso más de lo que imaginas 💭",
 "Tu abrazo sería mi lugar seguro 🤍",
 "Eres mi milagro diario ✨",
-"Si volviera a nacer, te elegiría otra vez 💘"
+"Si volviera a nacer, te elegiría otra vez 💘",
+"Amarte es mi destino 🌠",
+"Eres mi siempre favorito 💓"
 ];
 
 function getRandomPhrase(){
-if(usedMessages.length===phrases.length){
-usedMessages=[];
-}
+if(usedMessages.length===phrases.length) usedMessages=[];
 let available=phrases.filter(p=>!usedMessages.includes(p));
 let random=available[Math.floor(Math.random()*available.length)];
 usedMessages.push(random);
@@ -56,8 +55,7 @@ return random;
 
 let player={
 x:100,y:300,width:40,height:40,
-dy:0,gravity:1,jump:-18,grounded:false,
-lastPlatform:-1
+dy:0,gravity:1.2,jump:-20,grounded:false
 };
 
 let keys={};
@@ -68,32 +66,50 @@ function resetPlayer(){
 player.x=100;
 player.y=300;
 player.dy=0;
+message="Tú puedes corazón, inténtalo de nuevo 💕";
+messageTimer=150;
 }
 
 let platforms=[];
 let spikes=[];
+let mice=[];
+let hearts=[];
 let xPos=0;
 
-for(let i=0;i<25;i++){
-let y=450+Math.sin(i)*80;
-platforms.push({x:xPos,y:y,w:150,h:20,id:i});
+// NIVEL MÁS DIFÍCIL
+for(let i=0;i<35;i++){
 
-if(i%4===0 && i!==0){
-spikes.push({x:xPos+55,y:y-20,w:40,h:20});
+let y=450+Math.sin(i)*120;
+
+platforms.push({x:xPos,y:y,w:120,h:20});
+
+// pinchos
+if(i%2===0 && i!==0){
+spikes.push({x:xPos+30,y:y-20,w:60,h:20});
 }
 
-xPos+=220;
+// ratones enemigos
+if(i%5===0 && i!==0){
+mice.push({x:xPos+40,y:y-20,w:30,h:20,dir:1,min:xPos+20,max:xPos+80});
 }
 
-let portal={x:xPos-200,y:350,size:40,phase:0};
+// corazones físicos
+if(i%3===0){
+hearts.push({x:xPos+50,y:y-40,size:14,got:false});
+}
+
+xPos+=200;
+}
+
+let portal={x:xPos-150,y:350,size:40,phase:0};
 
 // estrellas animadas
 let stars=[];
-for(let i=0;i<120;i++){
+for(let i=0;i<150;i++){
 stars.push({
 x:Math.random()*canvas.width,
 y:Math.random()*300,
-speed:0.2+Math.random()*0.5,
+speed:0.3+Math.random()*0.7,
 phase:Math.random()*6.28
 });
 }
@@ -105,8 +121,8 @@ if(gameWon) return;
 player.dy+=player.gravity;
 player.y+=player.dy;
 
-if(keys["ArrowRight"]) player.x+=6;
-if(keys["ArrowLeft"]) player.x-=6;
+if(keys["ArrowRight"]) player.x+=7;
+if(keys["ArrowLeft"]) player.x-=7;
 
 player.grounded=false;
 
@@ -115,13 +131,6 @@ if(player.x < p.x+p.w &&
    player.x+player.width > p.x &&
    player.y+player.height <= p.y+20 &&
    player.y+player.height+player.dy >= p.y){
-
-if(player.lastPlatform!==p.id){
-message=getRandomPhrase();
-messageTimer=150;
-player.lastPlatform=p.id;
-}
-
 player.y=p.y-player.height;
 player.dy=0;
 player.grounded=true;
@@ -134,13 +143,39 @@ player.dy=player.jump;
 
 if(player.y>canvas.height) resetPlayer();
 
-// pinchos matan
+// pinchos
 spikes.forEach(s=>{
 if(player.x+player.width > s.x &&
    player.x < s.x+s.w &&
    player.y+player.height > s.y &&
    player.y < s.y+s.h){
 resetPlayer();
+}
+});
+
+// ratones
+mice.forEach(m=>{
+m.x+=m.dir*2;
+if(m.x<m.min||m.x>m.max) m.dir*=-1;
+
+if(player.x+player.width > m.x &&
+   player.x < m.x+m.w &&
+   player.y+player.height > m.y &&
+   player.y < m.y+m.h){
+resetPlayer();
+}
+});
+
+// corazones
+hearts.forEach(h=>{
+if(!h.got &&
+player.x+player.width > h.x &&
+player.x < h.x+h.size &&
+player.y+player.height > h.y &&
+player.y < h.y+h.size){
+h.got=true;
+message=getRandomPhrase();
+messageTimer=150;
 }
 });
 
@@ -154,7 +189,6 @@ gameWon=true;
 
 portal.phase+=0.05;
 
-// mover estrellas
 stars.forEach(st=>{
 st.x-=st.speed;
 if(st.x<0) st.x=canvas.width;
@@ -180,7 +214,7 @@ function draw(){
 
 ctx.clearRect(0,0,canvas.width,canvas.height);
 
-// estrellas moviéndose y cambiando color
+// estrellas
 stars.forEach(st=>{
 let r=150+100*Math.sin(st.phase);
 let g=150+100*Math.sin(st.phase+2);
@@ -203,7 +237,20 @@ ctx.lineTo(s.x+s.w-cameraX,s.y+s.h);
 ctx.fill();
 });
 
-// portal corazón animado
+// ratones
+ctx.fillStyle="gray";
+mice.forEach(m=>{
+ctx.fillRect(m.x-cameraX,m.y,m.w,m.h);
+});
+
+// corazones
+hearts.forEach(h=>{
+if(!h.got){
+drawHeart(h.x-cameraX,h.y,h.size,"red");
+}
+});
+
+// portal corazón
 let r=200+55*Math.sin(portal.phase);
 let g=50+50*Math.sin(portal.phase+2);
 let b=200+55*Math.sin(portal.phase+4);
@@ -215,17 +262,17 @@ ctx.beginPath();
 ctx.arc(player.x-cameraX+20,player.y+20,20,0,Math.PI*2);
 ctx.fill();
 
-// UI
+// mensajes
 if(messageTimer>0){
 ctx.fillStyle="white";
-ctx.font="26px Arial";
+ctx.font="24px Arial";
 ctx.fillText(message,canvas.width/2-450,100);
 }
 
 if(gameWon){
 ctx.font="38px Arial";
-ctx.fillText("Eres lo mejor que me pasó ❤️",
-canvas.width/2-350,canvas.height/2);
+ctx.fillText("Nivel superado 💖",
+canvas.width/2-200,canvas.height/2);
 }
 }
 
